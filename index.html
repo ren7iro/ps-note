@@ -22,10 +22,10 @@
     <!-- Kotak Login Password -->
     <div id="login-box" class="card">
         <h2>🔒 ps-note</h2>
-        <p>Masukkan password untuk membuka catatan:</p>
+        <p>Enter password to unlock notes:</p>
         <div style="display: flex; gap: 10px;">
-            <input type="password" id="password" placeholder="Password...">
-            <button onclick="unlockNote()">Buka</button>
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="unlockNote()">Unlock</button>
         </div>
     </div>
 
@@ -37,7 +37,7 @@
         </div>
         <textarea id="content" placeholder="Tulis catatanmu di sini..."></textarea>
         <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
-            <button onclick="saveData()" style="background: #28a745;">Simpan</button>
+            <button onclick="saveData()" style="background: #28a745;">Save</button>
         </div>
     </div>
 
@@ -52,7 +52,7 @@
                 return;
             }
 
-            document.getElementById("status").innerText = "Memuat data...";
+            document.getElementById("status").innerText = "Please wait..";
             
             try {
                 let response = await fetch(WEB_APP_URL, {
@@ -66,11 +66,11 @@
                     document.getElementById("login-box").classList.add("hidden");
                     document.getElementById("app").classList.remove("hidden");
                 } else {
-                    alert(result.message || "Password salah!");
+                    alert(result.message || "Incorrect password!");
                     document.getElementById("status").innerText = "";
                 }
             } catch (err) {
-                alert("Gagal terhubung ke server. Coba lagi.");
+                alert("Connection fail. try again.");
                 document.getElementById("status").innerText = "";
             }
         }
@@ -78,7 +78,7 @@
         async function saveData() {
             let pass = document.getElementById("password").value;
             let content = document.getElementById("content").value;
-            document.getElementById("status").innerText = "Menyimpan...";
+            document.getElementById("status").innerText = "Saving..";
 
             try {
                 let response = await fetch(WEB_APP_URL, {
@@ -88,13 +88,13 @@
                 let result = await response.json();
 
                 if (result.status === "success") {
-                    document.getElementById("status").innerText = "Tersimpan ke Drive! ✓";
+                    document.getElementById("status").innerText = "Note updated ✓";
                     setTimeout(() => { document.getElementById("status").innerText = ""; }, 3000);
                 } else {
-                    document.getElementById("status").innerText = "Gagal menyimpan!";
+                    document.getElementById("status").innerText = "Fail to save";
                 }
             } catch (err) {
-                document.getElementById("status").innerText = "Koneksi error!";
+                document.getElementById("status").innerText = "Connection Error";
             }
         }
     </script>
