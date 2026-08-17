@@ -14,7 +14,6 @@
             background: #f0f2f5; 
         }
         
-        /* Full screen layout */
         .fullscreen-container {
             position: fixed;
             top: 0;
@@ -28,7 +27,6 @@
             background: #f0f2f5;
         }
 
-        /* Login screen centered */
         #login-box {
             position: fixed;
             top: 0;
@@ -54,15 +52,73 @@
         .card button { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
         .card button:hover { background: #0056b3; }
 
-        /* App full screen elements */
         .header-app {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             padding: 0 5px;
         }
         .header-app h2 { color: #333; font-size: 20px; }
+
+        /* Styling untuk Tab Bar */
+        .tab-bar {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            overflow-x: auto;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: #e0e0e0;
+            border: none;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            max-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .tab.active {
+            background: #fff;
+            font-weight: bold;
+            border-top: 3px solid #007bff;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+        }
+        .tab-close {
+            background: none;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            color: #888;
+            padding: 0 2px;
+        }
+        .tab-close:hover { color: #ff4d4d; }
+        
+        .add-tab-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .add-tab-btn:hover { background: #0056b3; }
         
         textarea {
             flex-grow: 1;
@@ -115,21 +171,34 @@
         </div>
     </div>
 
-    <!-- Fullscreen Notepad App -->
+    <!-- Fullscreen Notepad App dengan Tab -->
     <div id="app" class="fullscreen-container hidden">
         <div class="header-app">
             <h2>📝 ps-note</h2>
             <span id="status"></span>
         </div>
-        <textarea id="content" placeholder="Write something.."></textarea>
+
+        <!-- Barisan Tab dan Tombol Tambah -->
+        <div class="tab-bar" id="tab-bar">
+            <div id="tabs-container" style="display: flex; gap: 5px; align-items: center;"></div>
+            <button class="add-tab-btn" onclick="addNewTab()" title="Add New Tab">+</button>
+        </div>
+
+        <textarea id="content" placeholder="Write something.." oninput="handleTyping()"></textarea>
+        
         <div class="footer-bar">
-            <span></span>
+            <span style="font-size: 13px; color: #888;">Auto-save enabled</span>
             <button class="save-btn" onclick="saveData()">Save</button>
         </div>
     </div>
 
     <script>
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbydc2-BNXUKxvtDaz0ob3m2shDhWTKPzeSi4RWHJuhIKMbxs3AaD51sAHfz_fkms8aVJA/exec";
+        
+        let notesData = [{ title: "Note 1", content: "" }];
+        let activeTabIndex = 0;
+        let typingTimer;
+        const doneTypingInterval = 1500;
 
         async function unlockNote() {
             let pass = document.getElementById("password").value;
@@ -148,9 +217,23 @@
                 let result = await response.json();
 
                 if (result.status === "success") {
-                    document.getElementById("content").value = result.content;
+                    if (result.content) {
+                        try {
+                            let parsed = JSON.parse(result.content);
+                            if (Array.isArray(parsed) && parsed.length > 0) {
+                                notesData = parsed;
+                            }
+                        } catch (e) {
+                            // Jika data lama berupa teks biasa (bukan JSON), masukkan ke tab pertama
+                            notesData = [{ title: "Note 1", content: result.content }];
+                        }
+                    }
+                    
+                    renderTabs();
+                    switchTab(0);
                     document.getElementById("login-box").classList.add("hidden");
                     document.getElementById("app").classList.remove("hidden");
+                    document.getElementById("status").innerText = "";
                 } else {
                     alert(result.message || "Incorrect password!");
                     document.getElementById("status").innerText = "";
@@ -161,21 +244,106 @@
             }
         }
 
+        function renderTabs() {
+            const container = document.getElementById("tabs-container");
+            container.innerHTML = "";
+            
+            notesData.forEach((note, index) => {
+                let tab = document.createElement("button");
+                tab.className = `tab ${index === activeTabIndex ? "active" : ""}`;
+                
+                let titleSpan = document.createElement("span");
+                titleSpan.innerText = note.title;
+                titleSpan.ondblclick = () => renameTab(index); // Klik 2x untuk ganti nama tab
+                tab.appendChild(titleSpan);
+
+                // Tombol tutup tab (hanya muncul jika tab lebih dari 1)
+                if (notesData.length > 1) {
+                    let closeBtn = document.createElement("button");
+                    closeBtn.className = "tab-close";
+                    closeBtn.innerHTML = "&times;";
+                    closeBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        deleteTab(index);
+                    };
+                    tab.appendChild(closeBtn);
+                }
+
+                tab.onclick = () => switchTab(index);
+                container.appendChild(tab);
+            });
+        }
+
+        function switchTab(index) {
+            // Simpan teks dari tab aktif sebelumnya
+            notesData[activeTabIndex].content = document.getElementById("content").value;
+            
+            activeTabIndex = index;
+            document.getElementById("content").value = notesData[activeTabIndex].content;
+            renderTabs();
+        }
+
+        function addNewTab() {
+            notesData[activeTabIndex].content = document.getElementById("content").value;
+            let newTitle = prompt("Enter tab name:", `Note ${notesData.length + 1}`);
+            if (!newTitle) return;
+
+            notesData.push({ title: newTitle, content: "" });
+            switchTab(notesData.length - 1);
+            saveData();
+        }
+
+        function renameTab(index) {
+            let newTitle = prompt("Rename tab:", notesData[index].title);
+            if (newTitle) {
+                notesData[index].title = newTitle;
+                renderTabs();
+                saveData();
+            }
+        }
+
+        function deleteTab(index) {
+            if (notesData.length <= 1) return;
+            if (confirm(`Delete tab "${notesData[index].title}"?`)) {
+                notesData.splice(index, 1);
+                if (activeTabIndex >= notesData.length) {
+                    activeTabIndex = notesData.length - 1;
+                }
+                switchTab(activeTabIndex);
+                saveData();
+            }
+        }
+
+        function handleTyping() {
+            notesData[activeTabIndex].content = document.getElementById("content").value;
+            document.getElementById("status").innerText = "Unsaved changes...";
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(saveData, doneTypingInterval);
+        }
+
         async function saveData() {
+            clearTimeout(typingTimer);
+            notesData[activeTabIndex].content = document.getElementById("content").value;
+            
             let pass = document.getElementById("password").value;
-            let content = document.getElementById("content").value;
-            document.getElementById("status").innerText = "Saving...";
+            let contentString = JSON.stringify(notesData); // Ubah struktur tab menjadi teks JSON untuk disimpan ke Google Drive
+            
+            document.getElementById("status").innerText = "Saving to Drive...";
 
             try {
                 let response = await fetch(WEB_APP_URL, {
                     method: "POST",
-                    body: JSON.stringify({ action: "save", pass: pass, content: content })
+                    body: JSON.stringify({ action: "save", pass: pass, content: contentString })
                 });
                 let result = await response.json();
 
                 if (result.status === "success") {
-                    document.getElementById("status").innerText = "Saved to Drive! ✓";
-                    setTimeout(() => { document.getElementById("status").innerText = ""; }, 3000);
+                    document.getElementById("status").innerText = "All changes saved ✓";
+                    setTimeout(() => { 
+                        if(document.getElementById("status").innerText === "All changes saved ✓") {
+                            document.getElementById("status").innerText = ""; 
+                        }
+                    }, 3000);
                 } else {
                     document.getElementById("status").innerText = "Failed to save!";
                 }
