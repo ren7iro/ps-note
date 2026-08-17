@@ -149,7 +149,7 @@
 
                 if (result.status === "success") {
                     document.getElementById("content").value = result.content;
-                    document.getElementById("login-boxclassList.add("hidden");
+                    document.getElementById("login-box").classList.add("hidden");
                     document.getElementById("app").classList.remove("hidden");
                 } else {
                     alert(result.message || "Incorrect password!");
