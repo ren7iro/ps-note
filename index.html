@@ -110,39 +110,23 @@
         }
         .tab-close:hover { color: #ff4d4d; }
         
-       /* Tombol Add Tab (+) Senada */
-        .add-tab-btn {
-            background: #e0e0e0; 
+       /* Tombol + dan Tombol Gembok (Identik) */
+        .add-tab-btn, .settings-btn {
+            background: #e0e0e0;
             color: #333;
             border: none;
             width: 32px;
             height: 32px;
             border-radius: 6px;
-            font-size: 18px;
+            font-size: 16px; /* Ukuran font diatur agar ikon pas di tengah */
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-shrink: 0;
+            transition: background 0.2s;
         }
-        .add-tab-btn:hover { background: #d0d0d0; }
-
-/* Tombol Ganti Password (Lock+Gear Icon) */
-        .settings-btn {
-            background: #e0e0e0; /* Senada dengan background tab */
-            border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-shrink: 0;
-            color: #333;
-            transition: all 0.2s;
-        }
-        .settings-btn:hover { background: #d0d0d0; }
+        .add-tab-btn:hover, .settings-btn:hover { background: #d0d0d0; }
         
         textarea {
             flex-grow: 1;
@@ -203,17 +187,13 @@
         </div>
 
         <!-- Barisan Tab + Tombol Setting di Ujung Kanan -->
-        <div class="tab-bar">
+       <div class="tab-bar">
             <div class="tab-left-group">
                 <div id="tabs-container" style="display: flex; gap: 5px; align-items: center;"></div>
                 <button class="add-tab-btn" onclick="addNewTab()" title="Add New Tab">+</button>
             </div>
-            <!-- Ikon SVG Ganti Password -->
-            <button class="settings-btn" onclick="changePassword()" title="Change Password">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.37 0 2.68-.27 3.88-.75l-1.47-1.47c-.77.14-1.57.22-2.41.22-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .84-.08 1.64-.22 2.41l1.47 1.47C21.73 14.68 22 13.37 22 12c0-5.52-4.48-10-10-10zm7.04 14.28l1.41 1.41-1.06 1.06-1.41-1.41c-.43.25-.89.47-1.38.64l.19 1.98h-1.5l.19-1.98c-.49-.17-.95-.39-1.38-.64l-1.41 1.41-1.06-1.06 1.41-1.41c-.25-.43-.47-.89-.64-1.38l-1.98-.19v-1.5l1.98-.19c.17-.49.39-.95.64-1.38l-1.41-1.41 1.06-1.06 1.41 1.41c.43-.25.89-.47 1.38-.64l-.19-1.98h1.5l-.19 1.98c.49.17.95.39 1.38.64l1.41-1.41 1.06 1.06-1.41 1.41c.25.43.47.89.64 1.38l1.98.19v1.5l-1.98.19c-.17.49-.39.95-.64 1.38zM12 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                </svg>
-            </button>
+            <!-- Tombol Gembok yang senada -->
+            <button class="settings-btn" onclick="changePassword()" title="Change Password">🔒</button>
         </div>
 
         <textarea id="content" placeholder="Write something.." oninput="handleTyping()"></textarea>
