@@ -118,7 +118,7 @@
             width: 32px;
             height: 32px;
             border-radius: 6px;
-            font-size: 16px; /* Ukuran font diatur agar ikon pas di tengah */
+            font-size: 16px;
             cursor: pointer;
             display: flex;
             justify-content: center;
@@ -211,6 +211,14 @@
         let activeTabIndex = 0;
         let typingTimer;
         const doneTypingInterval = 1500;
+
+        // Fitur Enter untuk Unlock
+        document.getElementById("password").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                unlockNote();
+            }
+        });
 
         async function unlockNote() {
             let pass = document.getElementById("password").value;
@@ -381,7 +389,7 @@
 
                 if (result.status === "success") {
                     alert("Password changed successfully!");
-                    document.getElementById("password").value = newPass; // Update memori input
+                    document.getElementById("password").value = newPass; 
                     document.getElementById("status").innerText = "Password updated ✓";
                     setTimeout(() => { document.getElementById("status").innerText = ""; }, 3000);
                 } else {
