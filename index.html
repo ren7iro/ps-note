@@ -61,15 +61,22 @@
         }
         .header-app h2 { color: #333; font-size: 20px; }
 
-        /* Styling untuk Tab Bar */
+        /* Tab Bar Layout dengan Flex Alignment */
         .tab-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab-left-group {
             display: flex;
             align-items: center;
             gap: 5px;
             overflow-x: auto;
-            margin-bottom: 8px;
-            padding-bottom: 4px;
-            border-bottom: 1px solid #ddd;
+            flex-grow: 1;
         }
         .tab {
             display: flex;
@@ -119,6 +126,28 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .add-tab-btn:hover { background: #0056b3; }
+
+        /* Tombol Ganti Password (Gear/Lock Icon) */
+        .settings-btn {
+            background: #ffffff;
+            border: 1px solid #ccc;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            color: #555;
+            transition: all 0.2s;
+        }
+        .settings-btn:hover {
+            background: #e9ecef;
+            color: #000;
+            border-color: #999;
+        }
         
         textarea {
             flex-grow: 1;
@@ -171,17 +200,20 @@
         </div>
     </div>
 
-    <!-- Fullscreen Notepad App dengan Tab -->
+    <!-- Fullscreen Notepad App -->
     <div id="app" class="fullscreen-container hidden">
         <div class="header-app">
             <h2>📝 ps-note</h2>
             <span id="status"></span>
         </div>
 
-        <!-- Barisan Tab dan Tombol Tambah -->
-        <div class="tab-bar" id="tab-bar">
-            <div id="tabs-container" style="display: flex; gap: 5px; align-items: center;"></div>
-            <button class="add-tab-btn" onclick="addNewTab()" title="Add New Tab">+</button>
+        <!-- Barisan Tab + Tombol Setting di Ujung Kanan -->
+        <div class="tab-bar">
+            <div class="tab-left-group">
+                <div id="tabs-container" style="display: flex; gap: 5px; align-items: center;"></div>
+                <button class="add-tab-btn" onclick="addNewTab()" title="Add New Tab">+</button>
+            </div>
+            <button class="settings-btn" onclick="changePassword()" title="Change Password">⚙️</button>
         </div>
 
         <textarea id="content" placeholder="Write something.." oninput="handleTyping()"></textarea>
@@ -224,7 +256,6 @@
                                 notesData = parsed;
                             }
                         } catch (e) {
-                            // Jika data lama berupa teks biasa (bukan JSON), masukkan ke tab pertama
                             notesData = [{ title: "Note 1", content: result.content }];
                         }
                     }
@@ -254,10 +285,9 @@
                 
                 let titleSpan = document.createElement("span");
                 titleSpan.innerText = note.title;
-                titleSpan.ondblclick = () => renameTab(index); // Klik 2x untuk ganti nama tab
+                titleSpan.ondblclick = () => renameTab(index);
                 tab.appendChild(titleSpan);
 
-                // Tombol tutup tab (hanya muncul jika tab lebih dari 1)
                 if (notesData.length > 1) {
                     let closeBtn = document.createElement("button");
                     closeBtn.className = "tab-close";
@@ -275,9 +305,7 @@
         }
 
         function switchTab(index) {
-            // Simpan teks dari tab aktif sebelumnya
             notesData[activeTabIndex].content = document.getElementById("content").value;
-            
             activeTabIndex = index;
             document.getElementById("content").value = notesData[activeTabIndex].content;
             renderTabs();
@@ -326,7 +354,7 @@
             notesData[activeTabIndex].content = document.getElementById("content").value;
             
             let pass = document.getElementById("password").value;
-            let contentString = JSON.stringify(notesData); // Ubah struktur tab menjadi teks JSON untuk disimpan ke Google Drive
+            let contentString = JSON.stringify(notesData);
             
             document.getElementById("status").innerText = "Saving to Drive...";
 
@@ -349,6 +377,40 @@
                 }
             } catch (err) {
                 document.getElementById("status").innerText = "Connection error!";
+            }
+        }
+
+        async function changePassword() {
+            let currentPass = document.getElementById("password").value;
+            let newPass = prompt("Enter new password:");
+            
+            if (!newPass) return;
+
+            document.getElementById("status").innerText = "Changing password...";
+
+            try {
+                let response = await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ 
+                        action: "change_password", 
+                        pass: currentPass, 
+                        newPass: newPass 
+                    })
+                });
+                let result = await response.json();
+
+                if (result.status === "success") {
+                    alert("Password changed successfully!");
+                    document.getElementById("password").value = newPass; // Update memori input
+                    document.getElementById("status").innerText = "Password updated ✓";
+                    setTimeout(() => { document.getElementById("status").innerText = ""; }, 3000);
+                } else {
+                    alert(result.message || "Failed to change password.");
+                    document.getElementById("status").innerText = "";
+                }
+            } catch (err) {
+                alert("Connection error.");
+                document.getElementById("status").innerText = "";
             }
         }
     </script>
