@@ -1,58 +1,144 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ps-note</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
-        h2 { margin-top: 0; color: #333; }
-        input[type="password"] { padding: 10px; width: 65%; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-        button { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
-        button:hover { background: #0056b3; }
-        textarea { width: 100%; height: 350px; margin-top: 15px; padding: 12px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; resize: vertical; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body, html { 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; 
+            font-family: Arial, sans-serif; 
+            background: #f0f2f5; 
+        }
+        
+        /* Full screen layout */
+        .fullscreen-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            background: #f0f2f5;
+        }
+
+        /* Login screen centered */
+        #login-box {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f0f2f5;
+        }
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        .card h2 { margin-bottom: 15px; color: #333; }
+        .card input[type="password"] { padding: 10px; width: 70%; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        .card button { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .card button:hover { background: #0056b3; }
+
+        /* App full screen elements */
+        .header-app {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 0 5px;
+        }
+        .header-app h2 { color: #333; font-size: 20px; }
+        
+        textarea {
+            flex-grow: 1;
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            resize: none;
+            outline: none;
+            background: #fff;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .footer-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            padding: 0 5px;
+        }
+
+        button.save-btn {
+            padding: 10px 25px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+        }
+        button.save-btn:hover { background: #218838; }
+
         .hidden { display: none !important; }
-        .header-app { display: flex; justify-content: space-between; align-items: center; }
-        #status { font-size: 13px; color: #666; font-style: italic; }
+        #status { font-size: 14px; color: #666; font-style: italic; }
     </style>
 </head>
 <body>
 
-    <!-- Kotak Login Password -->
-    <div id="login-box" class="card">
-        <h2>🔒 ps-note</h2>
-        <p>Enter password to unlock notes:</p>
-        <div style="display: flex; gap: 10px;">
-            <input type="password" id="password" placeholder="Password">
-            <button onclick="unlockNote()">Unlock</button>
+    <!-- Login Box -->
+    <div id="login-box">
+        <div class="card">
+            <h2>🔒 ps-note</h2>
+            <p style="margin-bottom: 15px; color: #555; font-size: 14px;">Enter password to unlock</p>
+            <div style="display: flex; gap: 10px;">
+                <input type="password" id="password" placeholder="Password">
+                <button onclick="unlockNote()">Unlock</button>
+            </div>
         </div>
     </div>
 
-    <!-- Tampilan Notepad Utama -->
-    <div id="app" class="card hidden">
+    <!-- Fullscreen Notepad App -->
+    <div id="app" class="fullscreen-container hidden">
         <div class="header-app">
             <h2>📝 ps-note</h2>
             <span id="status"></span>
         </div>
-        <textarea id="content" placeholder="Tulis catatanmu di sini..."></textarea>
-        <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
-            <button onclick="saveData()" style="background: #28a745;">Save</button>
+        <textarea id="content" placeholder="Write something.."></textarea>
+        <div class="footer-bar">
+            <span></span>
+            <button class="save-btn" onclick="saveData()">Save</button>
         </div>
     </div>
 
     <script>
-        // URL Web App Google Apps Script kamu
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbydc2-BNXUKxvtDaz0ob3m2shDhWTKPzeSi4RWHJuhIKMbxs3AaD51sAHfz_fkms8aVJA/exec";
 
         async function unlockNote() {
             let pass = document.getElementById("password").value;
             if (!pass) {
-                alert("Masukkan password dulu!");
+                alert("Please enter the password!");
                 return;
             }
 
-            document.getElementById("status").innerText = "Please wait..";
+            document.getElementById("status").innerText = "Loading data...";
             
             try {
                 let response = await fetch(WEB_APP_URL, {
@@ -63,14 +149,14 @@
 
                 if (result.status === "success") {
                     document.getElementById("content").value = result.content;
-                    document.getElementById("login-box").classList.add("hidden");
+                    document.getElementById("login-boxclassList.add("hidden");
                     document.getElementById("app").classList.remove("hidden");
                 } else {
                     alert(result.message || "Incorrect password!");
                     document.getElementById("status").innerText = "";
                 }
             } catch (err) {
-                alert("Connection fail. try again.");
+                alert("Connection failed. Please try again.");
                 document.getElementById("status").innerText = "";
             }
         }
@@ -78,7 +164,7 @@
         async function saveData() {
             let pass = document.getElementById("password").value;
             let content = document.getElementById("content").value;
-            document.getElementById("status").innerText = "Saving..";
+            document.getElementById("status").innerText = "Saving...";
 
             try {
                 let response = await fetch(WEB_APP_URL, {
@@ -88,13 +174,13 @@
                 let result = await response.json();
 
                 if (result.status === "success") {
-                    document.getElementById("status").innerText = "Note updated ✓";
+                    document.getElementById("status").innerText = "Saved to Drive! ✓";
                     setTimeout(() => { document.getElementById("status").innerText = ""; }, 3000);
                 } else {
-                    document.getElementById("status").innerText = "Fail to save";
+                    document.getElementById("status").innerText = "Failed to save!";
                 }
             } catch (err) {
-                document.getElementById("status").innerText = "Connection Error";
+                document.getElementById("status").innerText = "Connection error!";
             }
         }
     </script>
