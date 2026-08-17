@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ps-note</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        h2 { margin-top: 0; color: #333; }
+        input[type="password"] { padding: 10px; width: 65%; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        button { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        button:hover { background: #0056b3; }
+        textarea { width: 100%; height: 350px; margin-top: 15px; padding: 12px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; resize: vertical; }
+        .hidden { display: none !important; }
+        .header-app { display: flex; justify-content: space-between; align-items: center; }
+        #status { font-size: 13px; color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <!-- Kotak Login Password -->
+    <div id="login-box" class="card">
+        <h2>🔒 ps-note</h2>
+        <p>Masukkan password untuk membuka catatan:</p>
+        <div style="display: flex; gap: 10px;">
+            <input type="password" id="password" placeholder="Password...">
+            <button onclick="unlockNote()">Buka</button>
+        </div>
+    </div>
+
+    <!-- Tampilan Notepad Utama -->
+    <div id="app" class="card hidden">
+        <div class="header-app">
+            <h2>📝 ps-note</h2>
+            <span id="status"></span>
+        </div>
+        <textarea id="content" placeholder="Tulis catatanmu di sini..."></textarea>
+        <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
+            <button onclick="saveData()" style="background: #28a745;">Simpan ke Google Drive</button>
+        </div>
+    </div>
+
+    <script>
+        // URL Web App Google Apps Script kamu
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbydc2-BNXUKxvtDaz0ob3m2shDhWTKPzeSi4RWHJuhIKMbxs3AaD51sAHfz_fkms8aVJA/exec";
+
+        async function unlockNote() {
+            let pass = document.getElementById("password").value;
+            if (!pass) {
+                alert("Masukkan password dulu!");
+                return;
+            }
+
+            document.getElementById("status").innerText = "Memuat data...";
+            
+            try {
+                let response = await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "load", pass: pass })
+                });
+                let result = await response.json();
+
+                if (result.status === "success") {
+                    document.getElementById("content").value = result.content;
+                    document.getElementById("login-box").classList.add("hidden");
+                    document.getElementById("app").classList.remove("hidden");
+                } else {
+                    alert(result.message || "Password salah!");
+                    document.getElementById("status").innerText = "";
+                }
+            } catch (err) {
+                alert("Gagal terhubung ke server. Coba lagi.");
+                document.getElementById("status").innerText = "";
+            }
+        }
+
+        async function saveData() {
+            let pass = document.getElementById("password").value;
+            let content = document.getElementById("content").value;
+            document.getElementById("status").innerText = "Menyimpan...";
+
+            try {
+                let response = await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "save", pass: pass, content: content })
+                });
+                let result = await response.json();
+
+                if (result.status === "success") {
+                    document.getElementById("status").innerText = "Tersimpan ke Drive! ✓";
+                    setTimeout(() => { document.getElementById("status").innerText = ""; }, 3000);
+                } else {
+                    document.getElementById("status").innerText = "Gagal menyimpan!";
+                }
+            } catch (err) {
+                document.getElementById("status").innerText = "Koneksi error!";
+            }
+        }
+    </script>
+</body>
+</html>
