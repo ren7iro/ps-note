@@ -20,7 +20,7 @@ async function unlockNote() {
         return;
     }
 
-    // Tampilkan loader, sembunyikan login
+    // 1. Tampilkan loader, sembunyikan kotak login
     document.getElementById("login-box").classList.add("hidden");
     document.getElementById("loader").classList.remove("hidden");
     
@@ -34,91 +34,70 @@ async function unlockNote() {
         let result = await response.json();
 
         if (result.status === "success") {
-            // ... (logika load data sama seperti sebelumnya) ...
             if (result.content && result.content.trim() !== "") {
-                try {
-                    let parsed = JSON.parse(result.content);
-                    if (Array.isArray(parsed) && parsed.length > 0) { notesData = parsed; }
-                } catch (e) {
-                    notesData = [{ title: "Note 1", content: result.content }];
-                }
-            }
-            loadedSuccessfully = true;
-        } else {
-            alert(result.message || "Incorrect password!");
-            // Kembalikan ke login jika gagal
-            document.getElementById("loader").classList.add("hidden");
-            document.getElementById("login-box").classList.remove("hidden");
-            return;
-        }
-    } catch (err) {
-        // ... (fallback offline sama seperti sebelumnya) ...
-        loadedSuccessfully = true; 
-    }
-
-    if (loadedSuccessfully) {
-        // Sembunyikan loader, tampilkan app
-        document.getElementById("loader").classList.add("hidden");
-        document.getElementById("app").classList.remove("hidden");
-        
-        activeTabIndex = 0;
-        renderTabs();
-        document.getElementById("content").value = notesData[0].content || "";
-    }
-}
-
-    document.getElementById("status").innerText = "Loading data...";
-    
-    try {
-        let response = await fetch(WEB_APP_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "load", pass: pass })
-        });
-        let result = await response.json();
-
-        if (result.status === "success") {
-            if (result.content) {
                 try {
                     let parsed = JSON.parse(result.content);
                     if (Array.isArray(parsed) && parsed.length > 0) {
                         notesData = parsed;
                     }
                 } catch (e) {
+                    // Fallback jika data server berformat teks lama
                     notesData = [{ title: "Note 1", content: result.content }];
                 }
             } else {
-                // Fallback cek local storage jika cloud kosong
+                // Jika cloud kosong, ambil dari local storage jika ada
                 let localFallback = localStorage.getItem("ps_note_backup");
                 if (localFallback) {
-                    try { notesData = JSON.parse(localFallback); } catch(err) {}
+                    try {
+                        let parsedLocal = JSON.parse(localFallback);
+                        if (Array.isArray(parsedLocal) && parsedLocal.length > 0) {
+                            notesData = parsedLocal;
+                        }
+                    } catch(err) {}
                 }
             }
-            
-            renderTabs();
-            switchTab(0);
-            document.getElementById("login-box").classList.add("hidden");
-            document.getElementById("app").classList.remove("hidden");
-            document.getElementById("status").innerText = "";
+            loadedSuccessfully = true;
         } else {
             alert(result.message || "Incorrect password!");
-            document.getElementById("status").innerText = "";
+            // Kembalikan ke layar login jika password salah
+            document.getElementById("loader").classList.add("hidden");
+            document.getElementById("login-box").classList.remove("hidden");
+            return;
         }
     } catch (err) {
         // Jika offline total, coba load dari local storage browser
         let localFallback = localStorage.getItem("ps_note_backup");
         if (localFallback) {
             try {
-                notesData = JSON.parse(localFallback);
-                renderTabs();
-                switchTab(0);
-                document.getElementById("login-box").classList.add("hidden");
-                document.getElementById("app").classList.remove("hidden");
-                document.getElementById("status").innerText = "Offline Mode (Loaded from Local)";
-                return;
+                let parsedLocal = JSON.parse(localFallback);
+                if (Array.isArray(parsedLocal) && parsedLocal.length > 0) {
+                    notesData = parsedLocal;
+                    loadedSuccessfully = true;
+                }
             } catch(e) {}
         }
-        alert("Connection failed and no local backup found.");
-        document.getElementById("status").innerText = "";
+        
+        if (!loadedSuccessfully) {
+            alert("Connection failed and no local backup found.");
+            document.getElementById("loader").classList.add("hidden");
+            document.getElementById("login-box").classList.remove("hidden");
+            return;
+        }
+    }
+
+    if (loadedSuccessfully) {
+        // Validasi ekstra struktur data
+        if (!Array.isArray(notesData) || notesData.length === 0) {
+            notesData = [{ title: "Note 1", content: "" }];
+        }
+
+        // 2. Sembunyikan loader, tampilkan aplikasi utama
+        document.getElementById("loader").classList.add("hidden");
+        document.getElementById("app").classList.remove("hidden");
+        
+        activeTabIndex = 0;
+        renderTabs();
+        document.getElementById("content").value = notesData[0].content || "";
     }
 }
 
@@ -152,24 +131,18 @@ function renderTabs() {
 }
 
 function switchTab(index) {
-    // 1. Amankan data dari textarea ke tab aktif lama
     if (activeTabIndex !== null && notesData[activeTabIndex]) {
         notesData[activeTabIndex].content = document.getElementById("content").value;
     }
     
-    // 2. Pindah index
     activeTabIndex = index;
-    
-    // 3. Masukkan data tab baru ke textarea
     document.getElementById("content").value = notesData[activeTabIndex].content || "";
     
-    // 4. Update backup lokal
     saveToLocal();
     renderTabs();
 }
 
 async function addNewTab() {
-    // 1. Paksa simpan isi textarea saat ini sebelum prompt muncul
     if (activeTabIndex !== null && notesData[activeTabIndex]) {
         notesData[activeTabIndex].content = document.getElementById("content").value;
     }
@@ -177,22 +150,14 @@ async function addNewTab() {
     let newTitle = prompt("Enter tab name:", `Note ${notesData.length + 1}`);
     if (!newTitle) return;
 
-    // Cek duplikasi judul agar rapi
     let existing = notesData.some(n => n.title.toLowerCase() === newTitle.toLowerCase());
     if (existing) {
         newTitle = `${newTitle} (${notesData.length + 1})`;
     }
 
-    // 2. Push data baru ke array
     notesData.push({ title: newTitle, content: "" });
-    
-    // 3. Simpan ke local storage seketika
     saveToLocal();
-
-    // 4. Pindah ke tab baru
     switchTab(notesData.length - 1);
-    
-    // 5. Kirim ke server secara sinkron (await) agar datanya tidak mental
     await saveData();
 }
 
@@ -224,7 +189,6 @@ function handleTyping() {
         notesData[activeTabIndex].content = document.getElementById("content").value;
     }
     
-    // Simpan ke local storage setiap kali mengetik (instan)
     saveToLocal();
 
     document.getElementById("status").innerText = "Unsaved changes...";
@@ -232,13 +196,10 @@ function handleTyping() {
     typingTimer = setTimeout(saveData, doneTypingInterval);
 }
 
-// Fungsi pelindung cadangan lokal
 function saveToLocal() {
     try {
         localStorage.setItem("ps_note_backup", JSON.stringify(notesData));
-    } catch (e) {
-        console.error("Local storage full or disabled");
-    }
+    } catch (e) {}
 }
 
 async function saveData() {
@@ -247,7 +208,6 @@ async function saveData() {
         notesData[activeTabIndex].content = document.getElementById("content").value;
     }
     
-    // Pastikan local storage selalu update sebelum kirim ke cloud
     saveToLocal();
 
     let pass = document.getElementById("password").value;
