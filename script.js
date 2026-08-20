@@ -20,6 +20,53 @@ async function unlockNote() {
         return;
     }
 
+    // Tampilkan loader, sembunyikan login
+    document.getElementById("login-box").classList.add("hidden");
+    document.getElementById("loader").classList.remove("hidden");
+    
+    let loadedSuccessfully = false;
+
+    try {
+        let response = await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "load", pass: pass })
+        });
+        let result = await response.json();
+
+        if (result.status === "success") {
+            // ... (logika load data sama seperti sebelumnya) ...
+            if (result.content && result.content.trim() !== "") {
+                try {
+                    let parsed = JSON.parse(result.content);
+                    if (Array.isArray(parsed) && parsed.length > 0) { notesData = parsed; }
+                } catch (e) {
+                    notesData = [{ title: "Note 1", content: result.content }];
+                }
+            }
+            loadedSuccessfully = true;
+        } else {
+            alert(result.message || "Incorrect password!");
+            // Kembalikan ke login jika gagal
+            document.getElementById("loader").classList.add("hidden");
+            document.getElementById("login-box").classList.remove("hidden");
+            return;
+        }
+    } catch (err) {
+        // ... (fallback offline sama seperti sebelumnya) ...
+        loadedSuccessfully = true; 
+    }
+
+    if (loadedSuccessfully) {
+        // Sembunyikan loader, tampilkan app
+        document.getElementById("loader").classList.add("hidden");
+        document.getElementById("app").classList.remove("hidden");
+        
+        activeTabIndex = 0;
+        renderTabs();
+        document.getElementById("content").value = notesData[0].content || "";
+    }
+}
+
     document.getElementById("status").innerText = "Loading data...";
     
     try {
