@@ -39,6 +39,12 @@ async function unlockNote() {
                 } catch (e) {
                     notesData = [{ title: "Note 1", content: result.content }];
                 }
+            } else {
+                // Fallback cek local storage jika cloud kosong
+                let localFallback = localStorage.getItem("ps_note_backup");
+                if (localFallback) {
+                    try { notesData = JSON.parse(localFallback); } catch(err) {}
+                }
             }
             
             renderTabs();
@@ -51,7 +57,20 @@ async function unlockNote() {
             document.getElementById("status").innerText = "";
         }
     } catch (err) {
-        alert("Connection failed. Please try again.");
+        // Jika offline total, coba load dari local storage browser
+        let localFallback = localStorage.getItem("ps_note_backup");
+        if (localFallback) {
+            try {
+                notesData = JSON.parse(localFallback);
+                renderTabs();
+                switchTab(0);
+                document.getElementById("login-box").classList.add("hidden");
+                document.getElementById("app").classList.remove("hidden");
+                document.getElementById("status").innerText = "Offline Mode (Loaded from Local)";
+                return;
+            } catch(e) {}
+        }
+        alert("Connection failed and no local backup found.");
         document.getElementById("status").innerText = "";
     }
 }
@@ -86,16 +105,24 @@ function renderTabs() {
 }
 
 function switchTab(index) {
+    // 1. Amankan data dari textarea ke tab aktif lama
     if (activeTabIndex !== null && notesData[activeTabIndex]) {
         notesData[activeTabIndex].content = document.getElementById("content").value;
     }
+    
+    // 2. Pindah index
     activeTabIndex = index;
+    
+    // 3. Masukkan data tab baru ke textarea
     document.getElementById("content").value = notesData[activeTabIndex].content || "";
+    
+    // 4. Update backup lokal
+    saveToLocal();
     renderTabs();
 }
 
-function addNewTab() {
-    // Sinkronisasi teks dari tab aktif saat ini sebelum tab baru dibuat
+async function addNewTab() {
+    // 1. Paksa simpan isi textarea saat ini sebelum prompt muncul
     if (activeTabIndex !== null && notesData[activeTabIndex]) {
         notesData[activeTabIndex].content = document.getElementById("content").value;
     }
@@ -103,17 +130,30 @@ function addNewTab() {
     let newTitle = prompt("Enter tab name:", `Note ${notesData.length + 1}`);
     if (!newTitle) return;
 
+    // Cek duplikasi judul agar rapi
+    let existing = notesData.some(n => n.title.toLowerCase() === newTitle.toLowerCase());
+    if (existing) {
+        newTitle = `${newTitle} (${notesData.length + 1})`;
+    }
+
+    // 2. Push data baru ke array
     notesData.push({ title: newTitle, content: "" });
+    
+    // 3. Simpan ke local storage seketika
+    saveToLocal();
+
+    // 4. Pindah ke tab baru
     switchTab(notesData.length - 1);
     
-    // Memicu auto-save keseluruhan data tab langsung ke server
-    saveData();
+    // 5. Kirim ke server secara sinkron (await) agar datanya tidak mental
+    await saveData();
 }
 
 function renameTab(index) {
     let newTitle = prompt("Rename tab:", notesData[index].title);
     if (newTitle) {
         notesData[index].title = newTitle;
+        saveToLocal();
         renderTabs();
         saveData();
     }
@@ -126,6 +166,7 @@ function deleteTab(index) {
         if (activeTabIndex >= notesData.length) {
             activeTabIndex = notesData.length - 1;
         }
+        saveToLocal();
         switchTab(activeTabIndex);
         saveData();
     }
@@ -135,9 +176,22 @@ function handleTyping() {
     if (activeTabIndex !== null && notesData[activeTabIndex]) {
         notesData[activeTabIndex].content = document.getElementById("content").value;
     }
+    
+    // Simpan ke local storage setiap kali mengetik (instan)
+    saveToLocal();
+
     document.getElementById("status").innerText = "Unsaved changes...";
     clearTimeout(typingTimer);
     typingTimer = setTimeout(saveData, doneTypingInterval);
+}
+
+// Fungsi pelindung cadangan lokal
+function saveToLocal() {
+    try {
+        localStorage.setItem("ps_note_backup", JSON.stringify(notesData));
+    } catch (e) {
+        console.error("Local storage full or disabled");
+    }
 }
 
 async function saveData() {
@@ -146,6 +200,9 @@ async function saveData() {
         notesData[activeTabIndex].content = document.getElementById("content").value;
     }
     
+    // Pastikan local storage selalu update sebelum kirim ke cloud
+    saveToLocal();
+
     let pass = document.getElementById("password").value;
     let contentString = JSON.stringify(notesData);
     
@@ -166,10 +223,10 @@ async function saveData() {
                 }
             }, 3000);
         } else {
-            document.getElementById("status").innerText = "Failed to save!";
+            document.getElementById("status").innerText = "Failed to save to cloud!";
         }
     } catch (err) {
-        document.getElementById("status").innerText = "Connection error!";
+        document.getElementById("status").innerText = "Offline (Saved locally)";
     }
 }
 
