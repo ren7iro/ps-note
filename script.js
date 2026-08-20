@@ -95,7 +95,8 @@ function switchTab(index) {
 }
 
 function addNewTab() {
-    if (notesData[activeTabIndex]) {
+    // Sinkronisasi teks dari tab aktif saat ini sebelum tab baru dibuat
+    if (activeTabIndex !== null && notesData[activeTabIndex]) {
         notesData[activeTabIndex].content = document.getElementById("content").value;
     }
 
@@ -104,7 +105,9 @@ function addNewTab() {
 
     notesData.push({ title: newTitle, content: "" });
     switchTab(notesData.length - 1);
-    setTimeout(saveData, 200);
+    
+    // Memicu auto-save keseluruhan data tab langsung ke server
+    saveData();
 }
 
 function renameTab(index) {
@@ -129,7 +132,9 @@ function deleteTab(index) {
 }
 
 function handleTyping() {
-    notesData[activeTabIndex].content = document.getElementById("content").value;
+    if (activeTabIndex !== null && notesData[activeTabIndex]) {
+        notesData[activeTabIndex].content = document.getElementById("content").value;
+    }
     document.getElementById("status").innerText = "Unsaved changes...";
     clearTimeout(typingTimer);
     typingTimer = setTimeout(saveData, doneTypingInterval);
@@ -137,7 +142,7 @@ function handleTyping() {
 
 async function saveData() {
     clearTimeout(typingTimer);
-    if (notesData[activeTabIndex]) {
+    if (activeTabIndex !== null && notesData[activeTabIndex]) {
         notesData[activeTabIndex].content = document.getElementById("content").value;
     }
     
