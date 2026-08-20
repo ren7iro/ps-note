@@ -13,6 +13,14 @@ document.getElementById("password").addEventListener("keypress", function(event)
     }
 });
 
+// Fitur Shortcut Ctrl + S untuk Save Manual
+document.addEventListener("keydown", function(event) {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault(); // Mencegah browser membuka dialog "Save Page As"
+        saveData();             // Menjalankan fungsi penyimpanan manual ke cloud & local
+    }
+});
+
 async function unlockNote() {
     let pass = document.getElementById("password").value;
     if (!pass) {
